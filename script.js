@@ -19,6 +19,19 @@ ctx.font = "50px Impact";
 
 let ravens = [];
 let explosions = [];
+let layers = [];
+let gameSpeed = 2;
+
+const backgroundLayer1 = new Image();
+backgroundLayer1.src = "layer-1.png";
+const backgroundLayer2 = new Image();
+backgroundLayer2.src = "layer-2.png";
+const backgroundLayer3 = new Image();
+backgroundLayer3.src = "layer-3.png";
+const backgroundLayer4 = new Image();
+backgroundLayer4.src = "layer-4.png";
+const backgroundLayer5 = new Image();
+backgroundLayer5.src = "layer-5.png";
 
 class Explosions {
   constructor(x, y, size) {
@@ -119,6 +132,44 @@ class Raven {
   }
 }
 
+class Layer {
+  constructor(image, speedModifier) {
+    this.x = 0;
+    this.y = 0;
+    this.width = canvas.width;
+    this.height = canvas.height;
+    this.image = image;
+    this.speedModifier = speedModifier;
+    this.speed = gameSpeed * this.speedModifier;
+  }
+  update() {
+    this.speed = gameSpeed * this.speedModifier;
+    if (this.x <= -this.width) {
+      this.x = 0;
+    }
+
+    this.x = Math.floor(this.x - this.speed);
+  }
+  draw() {
+    drawScore();
+
+    ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+    ctx.drawImage(
+      this.image,
+      this.x + this.width,
+      this.y,
+      this.width,
+      this.height
+    );
+  }
+}
+
+layers.push(new Layer(backgroundLayer1, 0.2));
+layers.push(new Layer(backgroundLayer2, 0.4));
+layers.push(new Layer(backgroundLayer3, 0.6));
+layers.push(new Layer(backgroundLayer4, 0.8));
+layers.push(new Layer(backgroundLayer5, 1));
+
 function drawScore() {
   ctx.fillStyle = "black";
   ctx.fillText("Score: " + score, 50, 75);
@@ -141,11 +192,27 @@ function drawGameOver() {
     canvas.width / 2,
     canvas.height / 2 + 5
   );
+
+  ctx.textAlign = "center";
+  ctx.fillStyle = "black";
+  ctx.fillText("Retry?", canvas.width / 2, canvas.height / 2 + 60);
+
+  ctx.textAlign = "center";
+  ctx.fillStyle = "white";
+  ctx.fillText("Retry?", canvas.width / 2, canvas.height / 2 + 65);
 }
 
-
-
 window.addEventListener("click", (e) => {
+  if (gameOver) {
+    if (e.x < 940 && e.x > 800 && e.y > 465 && e.y < 504) {
+      gameOver = false;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ravens = [];
+      explosions = [];
+      score = 0;
+      animate(0);
+    }
+  }
   const detectPixelColor = collisionCanvasCtx.getImageData(e.x, e.y, 1, 1);
   const pc = detectPixelColor.data;
   ravens.forEach((object) => {
@@ -174,9 +241,10 @@ function animate(timestamp) {
       return a.width - b.width;
     });
   }
-  drawScore();
-  [...ravens, ...explosions].forEach((object) => object.update(deltaTime));
-  [...ravens, ...explosions].forEach((object) => object.draw());
+  [...layers, ...ravens, ...explosions].forEach((object) =>
+    object.update(deltaTime)
+  );
+  [...layers, ...ravens, ...explosions].forEach((object) => object.draw());
   ravens = ravens.filter((object) => !object.markedForDeletion);
   explosions = explosions.filter((object) => !object.markedForDeletion);
   if (!gameOver) requestAnimationFrame(animate);
